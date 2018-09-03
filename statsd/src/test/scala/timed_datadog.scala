@@ -36,7 +36,7 @@ object TimedDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
     val builder = new StreamsBuilder
     val in      = builder.stream[String, String](inTopic)
 
-    val out = in.timed[String, String, String](builder, client, "timed")((k, v) => k, (k, v) => k, tags) { stream =>
+    val out = in.timed[String, String](builder, client, "timed", tags) { stream =>
       stream.mapValues(v => {
         Thread.sleep(1000L)
         v
@@ -72,10 +72,14 @@ object TimedDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
     val builder = new StreamsBuilder
     val in      = builder.stream[String, String](inTopic)
 
-    val out = in.timed[String, String, String](builder, client, "timed")((k, v) => k, (k, v) => k, tags) { stream =>
-      stream.mapValues(v => {
-        Thread.sleep(1000L)
-        v
+    val out = in.timed[String, String](builder, client, "timed", tags) { stream =>
+      stream.mapValues(_ match {
+        case v: String if v == "world" =>
+          Thread.sleep(1000L)
+          v
+        case v: String =>
+          Thread.sleep(5000L)
+          v
       })
     }
 
@@ -83,11 +87,14 @@ object TimedDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
 
     runStreams(Seq(inTopic, outTopic), builder.build()) {
       publishToKafka(inTopic, "hello", "world")
-      publishToKafka(inTopic, "hello", "world")
+      publishToKafka(inTopic, "hello", "foo")
+
+      Thread.sleep(5000L)
 
       withConsumer[String, String, Unit] { consumer =>
         val consumedMessages: Stream[(String, String)] = consumer.consumeLazily(outTopic)
-        consumedMessages.head ==> ("hello" -> "world")
+        consumedMessages.head ==> ("hello"         -> "world")
+        consumedMessages.drop(1).head ==> ("hello" -> "foo")
       }
     }
 
@@ -95,13 +102,13 @@ object TimedDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
     val m = client.q.poll
 
     assertMatch(m) {
-      case TimerMetric(name, value, _, t) if name == "timed" && value >= 1000L && t == tags =>
+      case TimerMetric(name, value, _, t) if name == "timed" && value >= 1000L && value < 5000L && t == tags =>
     }
 
     val m2 = client.q.poll
 
     assertMatch(m2) {
-      case TimerMetric(name, value, _, t) if name == "timed" && value >= 1000L && t == tags =>
+      case TimerMetric(name, value, _, t) if name == "timed" && value >= 5000L && t == tags =>
     }
   }
 }

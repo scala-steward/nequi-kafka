@@ -21,20 +21,15 @@ object DataDog {
       v
     }
 
-  /** Report the processing time for stream operations in `f`
-   * Note that in order to identify start and end times, we need functions `id1` and `id2`.
-   * These should return the same ID for the corresponding records before and after applying `f`.
-   */
-  def timed[K1, V1, K2, V2, ID](
+  /** Report the processing time for stream operations in `f` **/
+  def timed[K1, V1, K2, V2](
     stream: KStream[K1, V1],
     builder: StreamsBuilder,
     client: DClient,
     name: String,
-    id1: (K1, V1) => ID,
-    id2: (K2, V2) => ID,
     tags: Seq[String]
-  )(f: KStream[K1, V1] => KStream[K2, V2])(implicit IDS: Serde[ID]): KStream[K2, V2] =
-    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name, id1, id2)(f)(IDS)
+  )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
+    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name)(f)
 
 }
 
@@ -48,41 +43,40 @@ object StatsD {
     v
   }
 
-  /** Report the processing time for stream operations in `f`
-   * Note that in order to identify start and end times, we need functions `id1` and `id2`.
-   * These should return the same ID for the corresponding records before and after applying `f`.
-   */
-  def timed[K1, V1, K2, V2, ID](
+  /** Report the processing time for stream operations in `f` **/
+  def timed[K1, V1, K2, V2](
     stream: KStream[K1, V1],
     builder: StreamsBuilder,
     client: Client,
-    name: String,
-    id1: (K1, V1) => ID,
-    id2: (K2, V2) => ID
-  )(f: KStream[K1, V1] => KStream[K2, V2])(implicit IDS: Serde[ID]): KStream[K2, V2] =
-    timed0((s, l) => client.timer(s, l))(stream)(builder, name, id1, id2)(f)(IDS)
+    name: String
+  )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
+    timed0((s, l) => client.timer(s, l))(stream)(builder, name)(f)
 
-  private[statsd] def timed0[K1, V1, K2, V2, ID](report: (String, Long) => Unit)(
+  private[statsd] def timed0[K1, V1, K2, V2](report: (String, Long) => Unit)(
     stream: KStream[K1, V1]
-  )(builder: StreamsBuilder, name: String, id1: (K1, V1) => ID, id2: (K2, V2) => ID)(
+  )(builder: StreamsBuilder, name: String)(
     f: KStream[K1, V1] => KStream[K2, V2]
-  )(implicit IDS: Serde[ID]): KStream[K2, V2] = {
+  ): KStream[K2, V2] = {
     val stateStoreName = s"statsd-${name}"
 
     builder.addStateStore(
-      Stores.keyValueStoreBuilder[ID, Long](Stores.inMemoryKeyValueStore(stateStoreName), IDS, Serdes.Long)
+      Stores
+        .keyValueStoreBuilder[String, Long](Stores.inMemoryKeyValueStore(stateStoreName), Serdes.String, Serdes.Long)
     )
 
     val startTime: KStream[K1, V1] = stream.transform(
       new Transformer[K1, V1, (K1, V1)] {
-        var store: KeyValueStore[ID, Long] = _
+        var store: KeyValueStore[String, Long] = _
+        var taskId: String                     = _
 
-        def init(ctx: ProcessorContext): Unit =
-          store = ctx.getStateStore(stateStoreName).asInstanceOf[KeyValueStore[ID, Long]]
+        def init(ctx: ProcessorContext): Unit = {
+          store = ctx.getStateStore(stateStoreName).asInstanceOf[KeyValueStore[String, Long]]
+          taskId = ctx.taskId.toString
+        }
         def close: Unit = store.close
 
         def transform(k: K1, v: V1): (K1, V1) = {
-          store.put(id1(k, v), System.currentTimeMillis)
+          store.put(taskId, System.currentTimeMillis)
 
           (k, v)
         }
@@ -92,16 +86,18 @@ object StatsD {
 
     f(startTime).transform(
       new Transformer[K2, V2, (K2, V2)] {
-        var store: KeyValueStore[ID, Long] = _
+        var store: KeyValueStore[String, Long] = _
+        var taskId: String                     = _
 
-        def init(ctx: ProcessorContext): Unit =
-          store = ctx.getStateStore(stateStoreName).asInstanceOf[KeyValueStore[ID, Long]]
+        def init(ctx: ProcessorContext): Unit = {
+          store = ctx.getStateStore(stateStoreName).asInstanceOf[KeyValueStore[String, Long]]
+          taskId = ctx.taskId.toString
+        }
         def close: Unit = store.close
 
         def transform(k: K2, v: V2): (K2, V2) = {
-          val id = id2(k, v)
-          Option(store.get(id)).foreach { startTime =>
-            store.delete(id)
+          Option(store.get(taskId)).foreach { startTime =>
+            store.delete(taskId)
 
             val now = System.currentTimeMillis
             report(name, now - startTime)
@@ -119,16 +115,10 @@ object imports {
   implicit class StreamsOps[K, V](s: KStream[K, V]) {
     def counted(c: Client, n: String): KStream[K, V]                     = StatsD.counted(s, c, n)
     def counted(c: DClient, n: String, tags: Seq[String]): KStream[K, V] = DataDog.counted(s, c, n, tags)
-    def timed[K2, V2, ID](builder: StreamsBuilder, client: Client, name: String)(
-      id1: (K, V) => ID,
-      id2: (K2, V2) => ID
-    )(f: KStream[K, V] => KStream[K2, V2])(implicit IDS: Serde[ID]) =
-      StatsD.timed(s, builder, client, name, id1, id2)(f)
-    def timed[K2, V2, ID](builder: StreamsBuilder, client: DClient, name: String)(
-      id1: (K, V) => ID,
-      id2: (K2, V2) => ID,
-      tags: Seq[String]
-    )(f: KStream[K, V] => KStream[K2, V2])(implicit IDS: Serde[ID]) =
-      DataDog.timed(s, builder, client, name, id1, id2, tags)(f)
+    def timed[K2, V2](builder: StreamsBuilder, client: Client, name: String)(f: KStream[K, V] => KStream[K2, V2]) =
+      StatsD.timed(s, builder, client, name)(f)
+    def timed[K2, V2](builder: StreamsBuilder, client: DClient, name: String, tags: Seq[String])(
+      f: KStream[K, V] => KStream[K2, V2]
+    ) = DataDog.timed(s, builder, client, name, tags)(f)
   }
 }
