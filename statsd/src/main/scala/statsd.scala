@@ -21,6 +21,16 @@ object DataDog {
       v
     }
 
+  // FIXME: This should be stream.peek but need to wait for a release with
+  // https://github.com/apache/kafka/pull/5566
+  /** Set a metric to a particular value **/
+  def set[K, V](stream: KStream[K, V], client: DClient, name: String, tags: Seq[String])(
+    f: (K, V) => String
+  ): KStream[K, V] = stream.map { (k, v) =>
+    client.set(name, f(k, v), tags = tags)
+    (k, v)
+  }
+
   /** Report the processing time for stream operations in `f` **/
   def timed[K1, V1, K2, V2](
     stream: KStream[K1, V1],
@@ -41,6 +51,15 @@ object StatsD {
   def counted[K, V](stream: KStream[K, V], client: Client, name: String): KStream[K, V] = stream.mapValues { v =>
     client.increment(name)
     v
+  }
+
+  // FIXME: This should be stream.peek but need to wait for a release with
+  // https://github.com/apache/kafka/pull/5566
+  /** Set a metric to a particular value **/
+  def set[K, V](stream: KStream[K, V], client: Client, name: String)(f: (K, V) => String): KStream[K, V] = stream.map {
+    (k, v) =>
+      client.set(name, f(k, v))
+      (k, v)
   }
 
   /** Report the processing time for stream operations in `f` **/
@@ -113,8 +132,11 @@ object StatsD {
 
 object imports {
   implicit class StreamsOps[K, V](s: KStream[K, V]) {
-    def counted(c: Client, n: String): KStream[K, V]                     = StatsD.counted(s, c, n)
-    def counted(c: DClient, n: String, tags: Seq[String]): KStream[K, V] = DataDog.counted(s, c, n, tags)
+    def counted(c: Client, n: String): KStream[K, V]                      = StatsD.counted(s, c, n)
+    def counted(c: DClient, n: String, tags: Seq[String]): KStream[K, V]  = DataDog.counted(s, c, n, tags)
+    def setStat(c: Client, n: String, f: (K, V) => String): KStream[K, V] = StatsD.set(s, c, n)(f)
+    def setStat(c: DClient, n: String, tags: Seq[String], f: (K, V) => String): KStream[K, V] =
+      DataDog.set(s, c, n, tags)(f)
     def timed[K2, V2](builder: StreamsBuilder, client: Client, name: String)(f: KStream[K, V] => KStream[K2, V2]) =
       StatsD.timed(s, builder, client, name)(f)
     def timed[K2, V2](builder: StreamsBuilder, client: DClient, name: String, tags: Seq[String])(

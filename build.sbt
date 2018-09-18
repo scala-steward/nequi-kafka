@@ -14,7 +14,9 @@ inThisBuild(
         "steinbach.tim@gmail.com",
         url("http://nequissimus.com/")
       )
-    )
+    ),
+    parallelExecution in Test := false,
+    fork in Test := true
   )
 )
 
