@@ -12,13 +12,20 @@ import org.apache.kafka.streams.state._
 
 /** DataDog (StatsD + tags) **/
 object DataDog {
-  // FIXME: This should be stream.peek but need to wait for a release with
-  // https://github.com/apache/kafka/pull/5566
+
   /** Count the number of messages coming through this stream **/
   def counted[K, V](stream: KStream[K, V], client: DClient, name: String, tags: Seq[String]): KStream[K, V] =
-    stream.mapValues { v =>
-      client.increment(name, tags = tags)
-      v
+    countedByMessage(stream, client, name, tags)((k, v) => Seq.empty)
+
+  // FIXME: This should be stream.peek but need to wait for a release with
+  // https://github.com/apache/kafka/pull/5566
+  /** Count the number of messages coming through this stream, and add tags dependent on message**/
+  def countedByMessage[K, V](stream: KStream[K, V], client: DClient, name: String, tags: Seq[String])(
+    f: (K, V) => Seq[String]
+  ): KStream[K, V] =
+    stream.map { (k, v) =>
+      client.increment(name, tags = tags ++ f(k, v))
+      (k, v)
     }
 
   // FIXME: This should be stream.peek but need to wait for a release with
@@ -132,8 +139,10 @@ object StatsD {
 
 object imports {
   implicit class StreamsOps[K, V](s: KStream[K, V]) {
-    def counted(c: Client, n: String): KStream[K, V]                      = StatsD.counted(s, c, n)
-    def counted(c: DClient, n: String, tags: Seq[String]): KStream[K, V]  = DataDog.counted(s, c, n, tags)
+    def counted(c: Client, n: String): KStream[K, V]                     = StatsD.counted(s, c, n)
+    def counted(c: DClient, n: String, tags: Seq[String]): KStream[K, V] = DataDog.counted(s, c, n, tags)
+    def countedByMessage(c: DClient, n: String, tags: Seq[String])(f: (K, V) => Seq[String]): KStream[K, V] =
+      DataDog.countedByMessage(s, c, n, tags)(f)
     def setStat(c: Client, n: String, f: (K, V) => String): KStream[K, V] = StatsD.set(s, c, n)(f)
     def setStat(c: DClient, n: String, tags: Seq[String], f: (K, V) => String): KStream[K, V] =
       DataDog.set(s, c, n, tags)(f)
