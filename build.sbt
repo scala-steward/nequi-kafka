@@ -1,4 +1,4 @@
-val mainScala = "2.12.6"
+val mainScala = "2.12.7"
 val allScala  = Seq("2.11.12", mainScala)
 
 inThisBuild(
@@ -22,7 +22,7 @@ inThisBuild(
 
 val commonSettings = Seq(
   libraryDependencies ++= Seq(
-    "org.apache.kafka" %% "kafka-streams-scala"              % "2.0.0",
+    "org.apache.kafka" %% "kafka-streams-scala"              % "2.0.1",
     "com.lihaoyi"      %% "utest"                            % "0.6.6" % Test,
     "net.manub"        %% "scalatest-embedded-kafka-streams" % "2.0.0" % Test,
     "javax.ws.rs"      % "javax.ws.rs-api"                   % "2.1.1" artifacts (Artifact("javax.ws.rs-api", "jar", "jar")) // https://github.com/sbt/sbt/issues/3618
