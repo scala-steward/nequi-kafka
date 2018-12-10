@@ -1,5 +1,5 @@
 language: scala
-scala: 2.12.7
+scala: 2.12.8
 jdk: openjdk8
 before_install:
 - "[ -z \"${encrypted_ea952d6556a2_iv}\" ] || openssl aes-256-cbc -K $encrypted_ea952d6556a2_key -iv $encrypted_ea952d6556a2_iv -in ./project/zecret -out ./project/secret -d"
