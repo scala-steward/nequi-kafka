@@ -1,0 +1,12 @@
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project global-plugins from coursier.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading global plugins from /home/nequi/.sbt/1.0/plugins[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project nequi-kafka-build from plugins.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading project definition from /home/nequi/dev/nequi-kafka/project[0m
+[0m[[0m[0minfo[0m] [0m[0mLoading settings for project root from build.sbt ...[0m
+[0m[[0m[0minfo[0m] [0m[0mSet current project to root (in build file:/home/nequi/dev/nequi-kafka/)[0m
+[0m[[0m[31merror[0m] [0m[0mNot a valid command: commit (similar: git, client)[0m
+[0m[[0m[31merror[0m] [0m[0mNot a valid project ID: commit[0m
+[0m[[0m[31merror[0m] [0m[0mExpected ':'[0m
+[0m[[0m[31merror[0m] [0m[0mNot a valid key: commit (similar: compile, commands, gitHeadCommit)[0m
+[0m[[0m[31merror[0m] [0m[0mcommit[0m
+[0m[[0m[31merror[0m] [0m[0m      ^[0m

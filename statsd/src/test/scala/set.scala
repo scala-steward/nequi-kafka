@@ -35,7 +35,7 @@ object SetSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
     val builder = new StreamsBuilder
     val in      = builder.stream[String, String](inTopic)
 
-    val out = in.setStat(client, pathToTopic(""), (k, v) => k)
+    val out = in.setStat(client, pathToTopic(""), (k, _) => k)
 
     out.to(outTopic)
 
