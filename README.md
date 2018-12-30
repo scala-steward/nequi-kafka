@@ -1,7 +1,7 @@
-
 # nequi-kafka
-Kafka (Streams) extensions/helpers
+![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.nequissimus/kafka-streams-statsd_2.12/badge.svg)
 
+Kafka (Streams) extensions/helpers
 
 ## StatsD + DataDog
 
