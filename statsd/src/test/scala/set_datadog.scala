@@ -36,7 +36,7 @@ object SetDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
     val builder = new StreamsBuilder
     val in      = builder.stream[String, String](inTopic)
 
-    val out = in.setStat(client, pathToTopic(""), tags, (k, v) => k)
+    val out = in.setStat(client, pathToTopic(""), tags, (k, _) => k)
 
     out.to(outTopic)
 
