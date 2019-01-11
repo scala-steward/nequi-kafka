@@ -72,7 +72,7 @@ object StatsD {
     stream: KStream[K1, V1],
     builder: StreamsBuilder,
     client: Client,
-    name: String,
+    name: String
   )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
     timed0((s, l) => client.timer(s, l))(stream)(builder, name, name)(f)
 
