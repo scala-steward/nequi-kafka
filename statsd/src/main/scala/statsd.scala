@@ -40,8 +40,17 @@ object DataDog {
     name: String,
     tags: Seq[String]
   )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
-    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name)(f)
+    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name, "")(f)
 
+  def timed[K1, V1, K2, V2](
+    stream: KStream[K1, V1],
+    builder: StreamsBuilder,
+    client: DClient,
+    name: String,
+    storeName: String,
+    tags: Seq[String]
+  )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
+    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name, storeName)(f)
 }
 
 /** Plain StatsD **/
@@ -63,16 +72,17 @@ object StatsD {
     stream: KStream[K1, V1],
     builder: StreamsBuilder,
     client: Client,
-    name: String
+    name: String,
+    storeName: String = ""
   )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
-    timed0((s, l) => client.timer(s, l))(stream)(builder, name)(f)
+    timed0((s, l) => client.timer(s, l))(stream)(builder, name, storeName)(f)
 
   private[statsd] def timed0[K1, V1, K2, V2](report: (String, Long) => Unit)(
     stream: KStream[K1, V1]
-  )(builder: StreamsBuilder, name: String)(
+  )(builder: StreamsBuilder, name: String, storeName: String)(
     f: KStream[K1, V1] => KStream[K2, V2]
   ): KStream[K2, V2] = {
-    val stateStoreName = s"statsd-${name}"
+    val stateStoreName = s"statsd-${name}-${storeName}"
 
     builder.addStateStore(
       Stores
@@ -143,8 +153,15 @@ object imports {
       DataDog.set(s, c, n, tags)(f)
     def timed[K2, V2](builder: StreamsBuilder, client: Client, name: String)(f: KStream[K, V] => KStream[K2, V2]) =
       StatsD.timed(s, builder, client, name)(f)
+    def timed[K2, V2](builder: StreamsBuilder, client: Client, name: String, storeName: String)(
+      f: KStream[K, V] => KStream[K2, V2]
+    ) =
+      StatsD.timed(s, builder, client, name, storeName)(f)
     def timed[K2, V2](builder: StreamsBuilder, client: DClient, name: String, tags: Seq[String])(
       f: KStream[K, V] => KStream[K2, V2]
     ) = DataDog.timed(s, builder, client, name, tags)(f)
+    def timed[K2, V2](builder: StreamsBuilder, client: DClient, name: String, storeName: String, tags: Seq[String])(
+      f: KStream[K, V] => KStream[K2, V2]
+    ) = DataDog.timed(s, builder, client, name, storeName, tags)(f)
   }
 }
