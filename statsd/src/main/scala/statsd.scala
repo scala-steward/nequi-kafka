@@ -40,7 +40,7 @@ object DataDog {
     name: String,
     tags: Seq[String]
   )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
-    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name, "")(f)
+    StatsD.timed0((s, l) => client.timer(s, l, tags = tags))(stream)(builder, name, name)(f)
 
   def timed[K1, V1, K2, V2](
     stream: KStream[K1, V1],
@@ -73,7 +73,15 @@ object StatsD {
     builder: StreamsBuilder,
     client: Client,
     name: String,
-    storeName: String = ""
+  )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
+    timed0((s, l) => client.timer(s, l))(stream)(builder, name, name)(f)
+
+  def timed[K1, V1, K2, V2](
+    stream: KStream[K1, V1],
+    builder: StreamsBuilder,
+    client: Client,
+    name: String,
+    storeName: String
   )(f: KStream[K1, V1] => KStream[K2, V2]): KStream[K2, V2] =
     timed0((s, l) => client.timer(s, l))(stream)(builder, name, storeName)(f)
 
