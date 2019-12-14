@@ -1,0 +1,17 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Lint
+      run: sbt scalafmtCheckAll
+    - name: Test 2.12
+      run: sbt ++2.12.10! test
+    - name: Test 2.13
+      run: sbt ++2.13.1! test

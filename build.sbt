@@ -1,5 +1,5 @@
-val mainScala = "2.12.8"
-val allScala  = Seq("2.11.12", mainScala)
+val mainScala = "2.12.10"
+val allScala  = Seq(mainScala, "2.13.1")
 
 inThisBuild(
   List(
@@ -23,8 +23,8 @@ inThisBuild(
 val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.apache.kafka"        %% "kafka-streams-scala"    % "2.3.1",
-    "com.lihaoyi"             %% "utest"                  % "0.6.6" % Test,
-    "io.github.embeddedkafka" %% "embedded-kafka-streams" % "2.2.0" % Test,
+    "com.lihaoyi"             %% "utest"                  % "0.6.9" % Test,
+    "io.github.embeddedkafka" %% "embedded-kafka-streams" % "2.3.1" % Test,
     "javax.ws.rs"             % "javax.ws.rs-api"         % "2.1.1" artifacts (Artifact("javax.ws.rs-api", "jar", "jar")) // https://github.com/sbt/sbt/issues/3618
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
@@ -50,7 +50,7 @@ val commonSettings = Seq(
     "-Ywarn-unused",
     "-Ywarn-value-discard"
   ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, scalaMajor)) if scalaMajor <= 11 => Nil
+    case Some((2, scalaMajor)) if scalaMajor >= 13 => Nil
     case _ =>
       Seq(
         "-opt-warnings",
@@ -77,5 +77,5 @@ lazy val statsd = project
     name := "kafka-streams-statsd",
     libraryDependencies ++= Seq(
       "com.github.gphat" %% "censorinus" % "2.1.15"
-    ),
+    )
   )
