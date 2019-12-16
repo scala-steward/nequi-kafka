@@ -37,10 +37,10 @@ object TimedDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
     val in      = builder.stream[String, String](inTopic)
 
     val out = in.timed[String, String](builder, client, "timed", tags) { stream =>
-      stream.mapValues(v => {
+      stream.mapValues { v =>
         Thread.sleep(1000L)
         v
-      })
+      }
     }
 
     out.to(outTopic)
