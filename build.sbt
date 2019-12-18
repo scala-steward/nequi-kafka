@@ -72,7 +72,10 @@ val commonSettings = Seq(
 lazy val root = project
   .in(file("."))
   .settings(
-    skip in publish := true
+    skip in publish := true,
+    publish := {},
+    publishLocal := {},
+    publishArtifact := false
   )
   .aggregate(statsd)
 
