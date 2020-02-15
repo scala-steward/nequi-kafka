@@ -21,16 +21,12 @@ object DataDog {
   def countedByMessage[K, V](stream: KStream[K, V], client: DClient, name: String, tags: Seq[String])(
     f: (K, V) => Seq[String]
   ): KStream[K, V] =
-    stream.peek { (k, v) =>
-      client.increment(name, tags = tags ++ f(k, v))
-    }
+    stream.peek((k, v) => client.increment(name, tags = tags ++ f(k, v)))
 
   /** Set a metric to a particular value **/
   def set[K, V](stream: KStream[K, V], client: DClient, name: String, tags: Seq[String])(
     f: (K, V) => String
-  ): KStream[K, V] = stream.peek { (k, v) =>
-    client.set(name, f(k, v), tags = tags)
-  }
+  ): KStream[K, V] = stream.peek((k, v) => client.set(name, f(k, v), tags = tags))
 
   /** Report the processing time for stream operations in `f` **/
   def timed[K1, V1, K2, V2](
@@ -63,8 +59,7 @@ object StatsD {
 
   /** Set a metric to a particular value **/
   def set[K, V](stream: KStream[K, V], client: Client, name: String)(f: (K, V) => String): KStream[K, V] = stream.peek {
-    (k, v) =>
-      client.set(name, f(k, v))
+    (k, v) => client.set(name, f(k, v))
   }
 
   /** Report the processing time for stream operations in `f` **/
