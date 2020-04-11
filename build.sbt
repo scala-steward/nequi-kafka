@@ -85,6 +85,6 @@ lazy val statsd = project
   .settings(
     name := "kafka-streams-statsd",
     libraryDependencies ++= Seq(
-      "com.github.gphat" %% "censorinus" % "2.1.15"
+      "com.github.gphat" %% "censorinus" % "2.1.16"
     )
   )
