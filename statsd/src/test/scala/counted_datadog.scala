@@ -14,7 +14,8 @@ import org.apache.kafka.streams.scala._
 import utest._
 import utest.framework.TestPath
 
-object CountedDataDogSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
+object CountedDataDogSpec extends TestSuite {
+  import EmbeddedKafkaStreams._
   import ImplicitConversions._
   import Serdes.String
   import imports._

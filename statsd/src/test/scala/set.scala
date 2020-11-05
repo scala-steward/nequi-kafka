@@ -12,7 +12,8 @@ import org.apache.kafka.streams.scala._
 import utest._
 import utest.framework.TestPath
 
-object SetSpec extends TestSuite with EmbeddedKafkaStreamsAllInOne {
+object SetSpec extends TestSuite {
+  import EmbeddedKafkaStreams._
   import ImplicitConversions._
   import Serdes.String
   import imports._
