@@ -30,7 +30,7 @@ val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.apache.kafka"        %% "kafka-streams-scala"    % "2.8.1",
     "com.lihaoyi"             %% "utest"                  % "0.7.10" % Test,
-    "io.github.embeddedkafka" %% "embedded-kafka-streams" % "2.8.0" % Test,
+    "io.github.embeddedkafka" %% "embedded-kafka-streams" % "2.8.1" % Test,
     "javax.ws.rs"             % "javax.ws.rs-api"         % "2.1.1" artifacts (Artifact("javax.ws.rs-api", "jar", "jar")) // https://github.com/sbt/sbt/issues/3618
   ),
   testFrameworks += new TestFramework("utest.runner.Framework"),
