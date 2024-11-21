@@ -30,7 +30,7 @@ val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.apache.kafka"        %% "kafka-streams-scala"    % "2.8.2",
     "com.lihaoyi"             %% "utest"                  % "0.8.4" % Test,
-    "io.github.embeddedkafka" %% "embedded-kafka-streams" % "2.8.1" % Test,
+    "io.github.embeddedkafka" %% "embedded-kafka-streams" % "3.9.0" % Test,
     "javax.ws.rs"             % "javax.ws.rs-api"         % "2.1.1" artifacts (Artifact(
       "javax.ws.rs-api",
       "jar",
